@@ -2,13 +2,19 @@ import warnings
 warnings.simplefilter("ignore", UserWarning)
 
 import pandas as pd
-import openai
 import argparse
 import re
+import os
 import time
 import winsound
 
+
+from openai import OpenAI
+from dotenv import load_dotenv
+
 # create an openai account and get the API key from here "https://platform.openai.com/account/api-keys"
+load_dotenv()
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def read_from_csv(file_path):
     try:
@@ -38,7 +44,7 @@ def get_context_error(err_msg):
 
 def call_openai(model, text):
     try:
-        response = openai.Completion.create(
+        response = client.completions.create(
             model=model,
             prompt=text,
             temperature=0,
@@ -70,21 +76,18 @@ if __name__ == '__main__':
         prompt = f.read()
 
     dataset = read_from_csv(args.tweet_dataset)
-    # shuffling the dev dataset every time
-    dataset = dataset.sample(frac=1)
-    # getting 10 samples for each practice
-    validation_dataset = pd.DataFrame(dataset.groupby('label')['text'].apply(lambda s: s.sample(min(len(s), 5))))
-    validation_dataset = validation_dataset.sample(frac=1)
+    # shuffling the dataset every time
+    validation_dataset = dataset.sample(frac=1)
     output = []
 
     for data in validation_dataset.iterrows():
         prompt_text = create_prompt(prompt, data[1]['text'])
         result = call_openai("gpt-3.5-turbo-instruct", prompt_text)
-        true_label = data[0][0]
+        true_label = data[1]['label']
         try:
-            predicted_label = result['choices'][0]['text'].strip().split(': ')[1]
+            predicted_label = result.choices[0].text.strip().split(': ')[1]
         except IndexError:
-            predicted_label = result['choices'][0]['text']
+            predicted_label = result.choices[0].text
         except TypeError:
             predicted_label = 'Not applicable'
         print("true label : {}, predicted label : {} ".format(true_label, predicted_label))

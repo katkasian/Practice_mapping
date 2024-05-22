@@ -2,16 +2,19 @@ import warnings
 warnings.simplefilter("ignore", UserWarning)
 
 
-import csv
+import os
 import pandas as pd
-import openai
 import argparse
 import re
 import time
 import winsound
 
-# create an openai account and get the API key from here "https://platform.openai.com/account/api-keys"
+from openai import OpenAI
+from dotenv import load_dotenv
 
+# create an openai account and get the API key from here "https://platform.openai.com/account/api-keys"
+load_dotenv()
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def read_from_csv(file_path):
     try:
@@ -37,7 +40,7 @@ def get_context_error(err_msg):
 
 def call_openai_chat(model, text):
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model=model,
             messages=[
                 {'role': 'system', 'content': '''Assistant is a large language model trained by OpenAI.
@@ -51,22 +54,6 @@ def call_openai_chat(model, text):
             ],
             #NAFO: [Advocacy, Arguing, Audiencing, Boosting, Community work, Expressing solidarity, Fundraising, Knowledge performance, Membership requests, Meme creation, Mobilising, News and content curation, Play, Self-promotion, Shitposting, Not applicable]
             #ESC: [Advocacy, Arguing, Audiencing, Betting, Charity, Community imagining, Denouncing, Expressing emotions, Expressing solidarity, Knowledge performance, News and content curation, Self-promotion, Not applicable]
-            temperature=0,
-            max_tokens=10,
-            top_p=1.0,
-            frequency_penalty=0.5,
-            presence_penalty=0.0
-        )
-        return response
-    except Exception as e:
-        time.sleep(get_context_error(e.json_body['error']['message']) + 1)
-
-
-def call_openai(model, text):
-    try:
-        response = openai.Completion.create(
-            model=model,
-            prompt=text,
             temperature=0,
             max_tokens=10,
             top_p=1.0,
@@ -97,18 +84,15 @@ if __name__ == '__main__':
 
     dataset = read_from_csv(args.tweet_dataset)
     # shuffling the dev dataset every time
-    dataset = dataset.sample(frac=1)
-    # getting 5 samples for each practice
-    validation_dataset = pd.DataFrame(dataset.groupby('label')['text'].apply(lambda s: s.sample(min(len(s), 5))))
-    validation_dataset = validation_dataset.sample(frac=1)
+    validation_dataset = dataset.sample(frac=1)
     output = []
 
     for data in validation_dataset.iterrows():
         prompt_text = create_prompt(prompt, data[1]['text'])
         result = call_openai_chat("gpt-4-1106-preview", prompt_text)
-        true_label = data[0][0]
+        true_label = data[1]['label']
         try:
-            predicted_label = result['choices'][0]['message']['content']
+            predicted_label = result.choices[0].message.content
         except:
             print(result)
             exit()

@@ -16,12 +16,12 @@ def clean_open_ai_data(df):
     weirdness appear """
     df['predicted_label'] = df.predicted_label.str.replace('\n', '')
     df['predicted_label'] = df.predicted_label.str.replace('Practice: ', '')
-    #df['predicted_label'] = df['predicted_label'].str.replace(r'[^\w\s]', '')
     df.loc[df.predicted_label == 'Community Work', 'predicted_label'] = 'Community work'
     df.loc[df.predicted_label == 'Shit', 'predicted_label'] = 'Shitposting'
     df.loc[df.predicted_label == 'Community', 'predicted_label'] = 'Community work'
     df.loc[df.predicted_label == 'Boost', 'predicted_label'] = 'Boosting'
     df.loc[df.predicted_label == 'Advoc', 'predicted_label'] = 'Advocacy'
+    df.loc[df.predicted_label == 'Audi', 'predicted_label'] = 'Audiencing'
     df.loc[df.predicted_label == 'Express', 'predicted_label'] = 'Expressing solidarity'
     df.loc[df.predicted_label == 'L1. Tweets that request ', 'predicted_label'] = 'Membership requests'
     df.loc[df.predicted_label == '\n\nNot applicable', 'predicted_label'] = 'Not applicable'
